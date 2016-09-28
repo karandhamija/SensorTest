@@ -6,11 +6,15 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.util.DisplayMetrics;
+import android.os.Environment;
+import android.util.Log;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+
+import java.io.File;
+import java.io.FileWriter;
 
 public class CustomView extends View {
 
@@ -19,7 +23,12 @@ public class CustomView extends View {
     private Path mPath;
     private Bitmap DrawBitmap;
     private Paint DrawBitmapPaint;
+    private String mFileName = "touchevents.txt";
+    private String mFolderName = "EventsFolder";
+    private FileWriter mWriter;
 
+    private String mFolderpath = Environment.getExternalStorageDirectory()+File.separator+mFolderName;
+    private String mFilePath = mFolderpath + File.separator + mFileName;
         public CustomView(Context c) {
 
             super(c);
@@ -46,6 +55,23 @@ public class CustomView extends View {
             mPaint.setStrokeJoin(Paint.Join.ROUND);
             mPaint.setStrokeCap(Paint.Cap.ROUND);
             mPaint.setStrokeWidth(20);
+
+            if(isFolderExist()){
+
+                File mFile = new File(mFilePath);
+                if(!mFile.exists()){
+
+                    try {
+                        mFile.createNewFile();
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
+                    }
+                }
+            }else {
+                createFolder();
+            }
+
         }
 
         @Override
@@ -69,6 +95,16 @@ public class CustomView extends View {
             mPath.moveTo(x, y);
             mX = x;
             mY = y;
+
+            String mString = "x: " + x + " y: " + y;
+            if(mWriter != null){
+                try{
+                    mWriter.append(mString);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
         }
 
         private void touch_move(float x, float y) {
@@ -96,18 +132,81 @@ public class CustomView extends View {
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    openFile();
                     touch_start(x, y);
+                    writeFile(x,y);
                     invalidate();
                     break;
                 case MotionEvent.ACTION_MOVE:
                     touch_move(x, y);
+                    writeFile(x,y);
                     invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
+                    writeFile(x,y);
+                    closeFile();
                     touch_up();
                     invalidate();
                     break;
             }
             return true;
         }
+
+    public boolean isFolderExist(){
+        File root = new File(mFolderpath);
+
+        Log.v("karan", "path is " + mFolderpath);
+
+        if (!root.exists())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public void createFolder(){
+        File root = new File(mFolderpath);
+        root.mkdir();
+        try{
+            File mFile = new File(root, mFileName);
+            Boolean mCreated = mFile.createNewFile();
+            Log.v("karan", "Is File Created " + mCreated);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void closeFile(){
+        try{
+            mWriter.close();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void openFile(){
+        try{
+            mWriter = new FileWriter(new File(mFilePath));
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void writeFile(float x, float y){
+        String mString = "x: " + x + " y: " + y + "\n";
+        if(mWriter != null){
+            try{
+                mWriter.append(mString);
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
 }
